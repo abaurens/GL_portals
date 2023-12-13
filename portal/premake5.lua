@@ -1,5 +1,5 @@
--- __Project_Name__ (project)
-project "__Project_Name__"
+-- portal (project)
+project "portal"
   kind "ConsoleApp"
   language "C++"
   cppdialect "C++20"
@@ -8,7 +8,7 @@ project "__Project_Name__"
   targetdir ("%{wks.location}/bin/" .. outputdir .. "/%{prj.name}")
   objdir ("%{wks.location}/build/" .. outputdir .. "%{prj.name}")
 
-  IncludeDir["__Project_Name__"] = "%{wks.location}/__Project_Name__/include"
+  IncludeDir["portal"] = "%{wks.location}/portal/include"
 
   -- Not using pre compiled header yet --
   -- pchheader "pch.h"
