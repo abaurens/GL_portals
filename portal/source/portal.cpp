@@ -1,24 +1,32 @@
 #include "portal.hpp"
 
 #include "Mesh.hpp"
+#include "Camera.hpp"
 
 #include <glm/glm.hpp>
 #include <glm/ext.hpp>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
+#include <chrono>
 #include <iostream>
+
+using namespace std::chrono_literals;
+namespace chrono = std::chrono;
+
 
 static const char *vertex_shader_text = R"(
   #version 110
 
   uniform mat4 MVP;
-  attribute vec2 vPos;
+
+  attribute vec3 vPos;
+
   varying vec3 color;
 
   void main()
   {
-      gl_Position = MVP * vec4(vPos, 0.0, 1.0);
+      gl_Position = MVP * vec4(vPos, 1.0);
       color = vec3(1, 1, 1);
   }
 )";
@@ -30,9 +38,14 @@ static const char *fragment_shader_text = R"(
 
   void main()
   {
-      gl_FragColor = vec4(color, 1.0);
+      gl_FragColor = vec4(color, 1.0) / (gl_FragCoord.z * 1.5);
   }
 )";
+
+glm::dvec2 savedCursorPos;
+bool paused = true;
+
+glm::mat4 proj;
 
 // shader
 GLuint program;
@@ -41,22 +54,69 @@ GLuint program;
 GLint mvp_location, vpos_location, vcol_location;
 
 // mesh
-//Mesh portals[2];
 std::vector<Mesh> meshes;
+
+Camera camera;
 
 // window
 GLFWwindow *window;
 
+// callbacks
 static void error_callback(int error, const char *description)
 {
   fprintf(stderr, "Error: %s\n", description);
 }
 
+static void resize_callback(GLFWwindow *, int width, int height)
+{
+  float ratio;
+  ratio = width / (float)height;
+
+  glViewport(0, 0, width, height);
+  proj = glm::perspective(70.0f, ratio, 0.1f, 1000.0f);
+}
+
 static void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods)
 {
   if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
-    glfwSetWindowShouldClose(window, GLFW_TRUE);
+  {
+    if (!paused)
+    {
+      paused = true;
+      glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+      glfwSetCursorPos(window, savedCursorPos.x, savedCursorPos.y);
+    }
+    else
+      glfwSetWindowShouldClose(window, GLFW_TRUE);
+  }
+
+  if (action != GLFW_PRESS)
+    return;
+
+  if (key == GLFW_KEY_P)
+  {
+    std::cout << "Camera:\n"
+      << "  x: " << camera.position.x << "\n"
+      << "  y: " << camera.position.y << "\n"
+      << "  z: " << camera.position.z << "\n"
+      << "  yaw: " << camera.yaw << "\n"
+      << "  pitch: " << camera.pitch << std::endl;
+  }
 }
+
+static void btn_callback(GLFWwindow *window, int button, int action, int mods)
+{
+  if (button == GLFW_MOUSE_BUTTON_1 && action == GLFW_PRESS && paused)
+  {
+    paused = false;
+    glfwGetCursorPos(window, &savedCursorPos.x, &savedCursorPos.y);
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    glfwSetCursorPos(window, 0, 0);
+  }
+}
+
+
+
 
 
 // portal 
@@ -82,10 +142,10 @@ static void init_portals()
   meshes.resize(2);
 
   const glm::vec4 portal_vertices[] = {
-    glm::vec4(-1, -1, 0, 1),
-    glm::vec4(1, -1, 0, 1),
-    glm::vec4(-1,  1, 0, 1),
-    glm::vec4(1,  1, 0, 1),
+    glm::vec4(-1, 0, -1, 1),
+    glm::vec4( 1, 0, -1, 1),
+    glm::vec4(-1, 0,  1, 1),
+    glm::vec4( 1, 0,  1, 1),
   };
 
   const GLushort portal_elements[] = {
@@ -105,11 +165,14 @@ static void init_portals()
   }
 
   // 90° angle + slightly higher
-  meshes[0].object2world = glm::translate(glm::mat4(1), glm::vec3(0, 1, -2));
-  meshes[1].object2world = glm::rotate(glm::mat4(1), -90.0f, glm::vec3(0, 1, 0)) * glm::translate(glm::mat4(1), glm::vec3(0, 1.2, -2));
+  meshes[0].object2world = glm::translate(glm::mat4(1), glm::vec3(0, -2, -1));
+  meshes[1].object2world = glm::rotate(glm::mat4(1), -90.0f, glm::vec3(0, 0, 1)) * glm::translate(glm::mat4(1), glm::vec3(0, -2, -1.2));
 
   meshes[0].upload(vpos_location);
   meshes[1].upload(vpos_location);
+
+  // set camera position so they both appear on start
+  camera = { { 3.2, 2, 1.0 }, {{ 4.1, 0.5 }} };
 }
 
 // Init pipeline
@@ -140,38 +203,29 @@ static void init_geometry()
   init_portals();
 }
 
-void render(GLFWwindow *window)
+void update(float timestep)
 {
-  float ratio;
-  int width, height;
-  glm::mat4 m, v, p, mvp;
+  if (!paused)
+    camera.update(timestep, window);
+}
 
-  glfwGetFramebufferSize(window, &width, &height);
-  ratio = width / (float)height;
+void render()
+{
+  glm::mat4 mvp;
 
-  glViewport(0, 0, width, height);
-  glClear(GL_COLOR_BUFFER_BIT);
-
-  m = glm::identity<glm::mat4>();
-  //m = glm::rotate(m, (float)glfwGetTime(), glm::vec3(0, 0, 1));
-  v = glm::lookAt(glm::vec3(5, 5, 5), glm::vec3(0, 0, 0), glm::vec3(0, 0, 1));
-  p = glm::perspective(70.0f, ratio, 0.1f, 1000.0f);
-  //p = glm::ortho(-ratio, ratio, -1.f, 1.f, 1.f, -1.f);
-  mvp = p * v;
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
   glUseProgram(program);
   for (const Mesh &mesh : meshes)
   {
-    mvp = p * v * mesh.object2world;
+    mvp = proj * camera.getView() * mesh.object2world;
     glUniformMatrix4fv(mvp_location, 1, GL_FALSE, (const GLfloat *)&mvp);
 
-    glDrawElements(GL_TRIANGLES, mesh.indicies.size(), GL_UNSIGNED_SHORT, &mesh.indicies[0]);
-    //glDrawElements(GL_TRIANGLES, mesh.indicies.size() / 3, GL_UNSIGNED_SHORT, &mesh.indicies[0]);
+    glDrawElements(GL_TRIANGLES, (GLsizei)mesh.indicies.size(), GL_UNSIGNED_SHORT, &mesh.indicies[0]);
   }
 }
 
 // init window & opengl context
-
 void init_gl_context()
 {
   glfwInit();
@@ -189,11 +243,21 @@ void init_gl_context()
     exit(EXIT_FAILURE);
   }
 
+  glfwSetFramebufferSizeCallback(window, resize_callback);
   glfwSetKeyCallback(window, key_callback);
+  glfwSetMouseButtonCallback(window, btn_callback);
+
+  if (glfwRawMouseMotionSupported())
+    glfwSetInputMode(window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
 
   glfwMakeContextCurrent(window);
   //gladLoadGL();
   gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
+
+
+  int width, height;
+  glfwGetFramebufferSize(window, &width, &height);
+  resize_callback(window, width, height);
 }
 
 int main()
@@ -208,16 +272,26 @@ int main()
   // Graphic pipeline setup
   //glEnable(GL_CULL_FACE);
   glDisable(GL_CULL_FACE);
+  glEnable(GL_DEPTH_TEST);
 
   init_shaders();
   init_geometry();
 
   
   
+  chrono::steady_clock::time_point now;
+  chrono::steady_clock::time_point last = chrono::steady_clock::now();
   // rendering loop
   while (!glfwWindowShouldClose(window))
   {
-    render(window);
+    now = chrono::steady_clock::now();
+    const chrono::milliseconds millis = chrono::duration_cast<chrono::milliseconds>(now - last);
+    last = now;
+
+    //std::cout << "timestep : " << millis << std::endl;
+
+    update((float)millis.count() / 1000.0f);
+    render();
 
     glfwSwapBuffers(window);
     glfwPollEvents();
