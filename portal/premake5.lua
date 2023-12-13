@@ -28,7 +28,9 @@ project "portal"
   }
 
   includedirs {
-	-- IncludeDir["dependency"]
+	"%{IncludeDir.glm}",
+    "%{IncludeDir.glad}",
+    "%{IncludeDir.glfw}",
     "include/"
   }
 
@@ -36,7 +38,8 @@ project "portal"
   }
 
   links {
-    -- "dependency"
+    "glad", 
+    "glfw"
   }
 
   filter "system:linux"

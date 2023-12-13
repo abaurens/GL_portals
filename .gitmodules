@@ -1,0 +1,11 @@
+[submodule "libs/glfw"]
+	path = libs/glfw
+	url = git@github.com:Minecraft-Clone/glfw.git
+	branch = premake
+[submodule "libs/glm"]
+	path = libs/glm
+	url = git@github.com:Minecraft-Clone/glm.git
+[submodule "libs/glad"]
+	path = libs/glad
+	url = git@github.com:Minecraft-Clone/libGlad.git
+	branch = premake

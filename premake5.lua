@@ -24,8 +24,8 @@ outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
 --vectorextensions "SSE4.2"
 
 defines {
-    --- temporary : stb will most likely be reworked
-    "",
+  "GLM_FORCE_SWIZZLE", -- We want to enable GLM swizzle features
+  "GLFW_INCLUDE_NONE", -- We're using glad, so we don't want GLFW to include OpenGL
 }
 
 workspace_files {
@@ -47,7 +47,9 @@ filter "configurations:Release"
 
 -- dependencies compiled from source
 group "Dependencies"
-  -- include("libs/dependency_source_code")
+  include("libs/glm")
+  include("libs/glad")
+  include("libs/glfw")
 
 group ""
   include("portal")
