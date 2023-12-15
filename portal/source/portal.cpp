@@ -2,9 +2,9 @@
 
 #include "Mesh.hpp"
 #include "Camera.hpp"
+#include "Shader.hpp"
 
 #include <glm/glm.hpp>
-#include <glm/ext.hpp>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
@@ -14,49 +14,14 @@
 using namespace std::chrono_literals;
 namespace chrono = std::chrono;
 
-
-static const char *vertex_shader_text = R"(
-  #version 110
-
-  uniform mat4 MVP;
-
-  attribute vec3 vPos;
-
-  varying vec3 color;
-
-  void main()
-  {
-      gl_Position = MVP * vec4(vPos, 1.0);
-      color = vec3(1, 1, 1);
-  }
-)";
-
-static const char *fragment_shader_text = R"(
-  #version 110
-
-  varying vec3 color;
-
-  void main()
-  {
-      gl_FragColor = vec4(color, 1.0) / (gl_FragCoord.z * 1.5);
-  }
-)";
-
 glm::dvec2 savedCursorPos;
 bool paused = true;
 
 glm::mat4 proj;
 
-// shader
-GLuint program;
-
-// shader uniforms
-GLint mvp_location, vpos_location, vcol_location;
-
-// mesh
-std::vector<Mesh> meshes;
-
+Shader flat;
 Camera camera;
+std::vector<Mesh> meshes;
 
 // window
 GLFWwindow *window;
@@ -73,7 +38,7 @@ static void resize_callback(GLFWwindow *, int width, int height)
   ratio = width / (float)height;
 
   glViewport(0, 0, width, height);
-  proj = glm::perspective(70.0f, ratio, 0.1f, 1000.0f);
+  proj = glm::perspective(70.0f, ratio, 0.1f, 50.0f);
 }
 
 static void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods)
@@ -120,9 +85,9 @@ static void btn_callback(GLFWwindow *window, int button, int action, int mods)
 
 
 // portal 
-glm::mat4 portal_view(glm::mat4 orig_view, Mesh *src, Mesh *dst)
+static glm::mat4 portal_view(glm::mat4 orig_view, Mesh *src, Mesh *dst)
 {
-  glm::mat4 mv = orig_view * src->object2world;
+  glm::mat4 mv = orig_view * src->transform;
   glm::mat4 portal_cam =
     // 3. transformation from source portal to the camera - it's the
     //    first portal's ModelView matrix:
@@ -132,7 +97,7 @@ glm::mat4 portal_view(glm::mat4 orig_view, Mesh *src, Mesh *dst)
     // 1. go the destination portal; using inverse, because camera
     //    transformations are reversed compared to object
     //    transformations:
-    * glm::inverse(dst->object2world)
+    * glm::inverse(dst->transform)
     ;
   return portal_cam;
 }
@@ -165,11 +130,11 @@ static void init_portals()
   }
 
   // 90° angle + slightly higher
-  meshes[0].object2world = glm::translate(glm::mat4(1), glm::vec3(0, -2, -1));
-  meshes[1].object2world = glm::rotate(glm::mat4(1), -90.0f, glm::vec3(0, 0, 1)) * glm::translate(glm::mat4(1), glm::vec3(0, -2, -1.2));
+  meshes[0].transform = glm::translate(glm::mat4(1), glm::vec3(0, -2, -1));
+  meshes[1].transform = glm::rotate(glm::mat4(1), -90.0f, glm::vec3(0, 0, 1)) * glm::translate(glm::mat4(1), glm::vec3(0, -2, -1.2));
 
-  meshes[0].upload(vpos_location);
-  meshes[1].upload(vpos_location);
+  meshes[0].upload(flat);
+  meshes[1].upload(flat);
 
   // set camera position so they both appear on start
   camera = { { 3.2, 2, 1.0 }, {{ 4.1, 0.5 }} };
@@ -178,24 +143,17 @@ static void init_portals()
 // Init pipeline
 static void init_shaders()
 {
-  GLuint vertex_shader, fragment_shader;
+  //GLuint vertex_shader, fragment_shader;
 
-  vertex_shader = glCreateShader(GL_VERTEX_SHADER);
-  glShaderSource(vertex_shader, 1, &vertex_shader_text, NULL);
-  glCompileShader(vertex_shader);
+  flat.addFile(Shader::Type::vertex, "./Shaders/flat.vert");
+  flat.addFile(Shader::Type::fragment, "./Shaders/flat.frag");
+  flat.compile();
 
-  fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
-  glShaderSource(fragment_shader, 1, &fragment_shader_text, NULL);
-  glCompileShader(fragment_shader);
-
-  program = glCreateProgram();
-  glAttachShader(program, vertex_shader);
-  glAttachShader(program, fragment_shader);
-  glLinkProgram(program);
-
-  mvp_location = glGetUniformLocation(program, "MVP");
-  vpos_location = glGetAttribLocation(program, "vPos");
-  //vcol_location = glGetAttribLocation(program, "vCol");
+  if (!flat.valid())
+  {
+    clean_quit();
+    exit(42);
+  }
 }
 
 static void init_geometry()
@@ -203,30 +161,9 @@ static void init_geometry()
   init_portals();
 }
 
-void update(float timestep)
-{
-  if (!paused)
-    camera.update(timestep, window);
-}
-
-void render()
-{
-  glm::mat4 mvp;
-
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-  glUseProgram(program);
-  for (const Mesh &mesh : meshes)
-  {
-    mvp = proj * camera.getView() * mesh.object2world;
-    glUniformMatrix4fv(mvp_location, 1, GL_FALSE, (const GLfloat *)&mvp);
-
-    glDrawElements(GL_TRIANGLES, (GLsizei)mesh.indicies.size(), GL_UNSIGNED_SHORT, &mesh.indicies[0]);
-  }
-}
 
 // init window & opengl context
-void init_gl_context()
+static void init_gl_context()
 {
   glfwInit();
 
@@ -254,20 +191,32 @@ void init_gl_context()
   //gladLoadGL();
   gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
 
-
   int width, height;
   glfwGetFramebufferSize(window, &width, &height);
   resize_callback(window, width, height);
 }
 
-int main()
-{
-  std::cout << "Hello Premake from " << PROJECT_NAME << " !" << std::endl;
 
+
+
+
+
+void clean_quit()
+{
+  for (Mesh &mesh : meshes)
+    mesh.clear();
+  meshes.clear();
+
+  flat.clear();
+
+  glfwDestroyWindow(window);
+  glfwTerminate();
+}
+
+void init()
+{
   init_gl_context();
   glfwSwapInterval(1);
-  
-
 
   // Graphic pipeline setup
   //glEnable(GL_CULL_FACE);
@@ -276,9 +225,10 @@ int main()
 
   init_shaders();
   init_geometry();
+}
 
-  
-  
+void loop()
+{
   chrono::steady_clock::time_point now;
   chrono::steady_clock::time_point last = chrono::steady_clock::now();
   // rendering loop
@@ -296,9 +246,36 @@ int main()
     glfwSwapBuffers(window);
     glfwPollEvents();
   }
+}
 
-  // cleanup
-  glfwDestroyWindow(window);
-  glfwTerminate();
+void update(float timestep)
+{
+  if (!paused)
+    camera.update(timestep, window);
+}
+
+void render()
+{
+  glm::mat4 mvp;
+
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+  glUseProgram(flat.id());
+  for (const Mesh &mesh : meshes)
+  {
+    mvp = proj * camera.getView() * mesh.transform;
+    glUniformMatrix4fv(flat.getUniform("MVP"), 1, GL_FALSE, (const GLfloat *)&mvp);
+
+    glDrawElements(GL_TRIANGLES, (GLsizei)mesh.indicies.size(), GL_UNSIGNED_SHORT, &mesh.indicies[0]);
+  }
+}
+
+int main()
+{
+  std::cout << "Hello Premake from " << PROJECT_NAME << " !" << std::endl;
+
+  init();
+  loop();
+  clean_quit();
   return 0;
 }

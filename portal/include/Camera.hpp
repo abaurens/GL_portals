@@ -56,6 +56,7 @@ struct Camera
     constexpr float TWO_PI  = (float)M_PI * 2;
 
     float speed = 3.0f;
+    float mouseSensivity = 0.3f;
     glm::vec3 movement = { 0, 0, 0 };
 
     if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL))
@@ -79,7 +80,7 @@ struct Camera
     glfwSetCursorPos(window, 0, 0);
 
     position += (movement * speed * timestep);
-    rotation += (glm::vec2(mouse_delta) * timestep);
+    rotation += (glm::vec2(mouse_delta) * mouseSensivity * timestep);
 
     yaw = glm::mod(yaw, TWO_PI); // ensures no overgrowth 
     pitch = glm::clamp(pitch, -HALF_PI, HALF_PI); // ensures no screen inversion

@@ -24,6 +24,7 @@ outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
 --vectorextensions "SSE4.2"
 
 defines {
+  "_CRT_SECURE_NO_WARNINGS", -- Disable windows warnings about stdlib functions
   "_USE_MATH_DEFINES", -- We want to have access to M_PI trough <math.h>
   "GLM_FORCE_SWIZZLE", -- We want to enable GLM swizzle features
   "GLFW_INCLUDE_NONE", -- We're using glad, so we don't want GLFW to include OpenGL
