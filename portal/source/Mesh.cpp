@@ -9,27 +9,21 @@ Mesh::Mesh() noexcept : m_uv_buffer(0), m_vertex_buffer(0), m_vertex_array(0), m
 
 Mesh::Mesh(Mesh &&mv) noexcept :
   uvs(mv.uvs), vertices(mv.vertices), indicies(mv.indicies),
+  transform(mv.transform),
   m_uv_buffer(mv.m_uv_buffer),
   m_vertex_buffer(mv.m_vertex_buffer),
   m_vertex_array(mv.m_vertex_array),
   m_is_messy(mv.m_is_messy),
   m_material(mv.m_material)
 {
-  mv.uvs.clear();
-  mv.vertices.clear();
-  mv.indicies.clear();
-
-  mv.m_uv_buffer = 0;
-  mv.m_vertex_buffer = 0;
-  mv.m_vertex_array = 0;
-  mv.m_is_messy = true;
-  mv.m_material = nullptr;
+  mv.reset();
 }
 
 Mesh::Mesh(const Mesh &other):
   uvs(other.uvs),
   vertices(other.vertices),
   indicies(other.indicies),
+  transform(other.transform),
   m_is_messy(true),
   m_material(other.m_material)
 {
@@ -62,6 +56,8 @@ void Mesh::upload()
     glBindBuffer(GL_ARRAY_BUFFER, m_uv_buffer);
     glNamedBufferData(m_uv_buffer, vertices.size() * sizeof(glm::vec2), &uvs[0], GL_STATIC_DRAW);
   }
+
+  m_is_messy = false;
 }
 
 void Mesh::clear()
@@ -72,12 +68,7 @@ void Mesh::clear()
   if (glIsVertexArray(m_vertex_array))
     glDeleteVertexArrays(1, &m_vertex_array);
 
-  vertices.clear();
-  indicies.clear();
-  transform = glm::mat4(1);
-
-  m_vertex_buffer = 0;
-  m_vertex_array = 0;
+  reset();
 }
 
 void Mesh::render(const Camera &camera) const
@@ -93,7 +84,6 @@ void Mesh::render(const Camera &camera) const
       glBindTexture(GL_TEXTURE_2D, m_material->m_textures[i]);
     }
   }
-  //glBindTexture(GL_TEXTURE_2D, texture);
 
   // bind VAO
   glBindVertexArray(m_vertex_array);
@@ -102,7 +92,7 @@ void Mesh::render(const Camera &camera) const
   enableVertAttribs();
 
   // upload MVP matrix
-  const glm::mat4 mvp = App::proj * camera.getView() * transform;
+  const glm::mat4 mvp = camera.getProj() * camera.getView() * transform;
   glUniformMatrix4fv(getShader().getUniform("MVP"), 1, GL_FALSE, (const GLfloat *)&mvp);
 
   // draw the VAO
@@ -117,6 +107,22 @@ void Mesh::setMaterial(const Material *material)
   m_material = material;
 }
 
+
+void Mesh::reset()
+{
+  uvs.clear();
+  vertices.clear();
+  indicies.clear();
+
+  transform = glm::mat4(1);
+
+  m_uv_buffer = 0;
+  m_vertex_buffer = 0;
+  m_vertex_array = 0;
+
+  m_is_messy = true;
+  m_material = nullptr;
+}
 
 const Shader &Mesh::getShader() const
 {

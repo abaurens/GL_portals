@@ -10,6 +10,13 @@
 
 struct Camera
 {
+public:
+  enum class ProjType: bool
+  {
+    perspective,
+    orthographic
+  };
+
   glm::vec3 position = {0, 0, 0};
   union
   {
@@ -21,20 +28,12 @@ struct Camera
     };
   };
 
-  glm::vec3 up() const
-  {
-    return glm::vec3(0, 0, 1);
-  }
+public:
+  glm::vec3 up() const { return glm::vec3(0, 0, 1); }
 
-  glm::vec3 right() const
-  {
-    return { cos(-yaw), sin(-yaw), 0 };
-  }
+  glm::vec3 right() const { return { cos(-yaw), sin(-yaw), 0 }; }
 
-  glm::vec3 forward_2d() const
-  {
-    return { -sin(-yaw), cos(-yaw), 0 };
-  }
+  glm::vec3 forward_2d() const { return { -sin(-yaw), cos(-yaw), 0 }; }
 
   glm::vec3 forward() const
   {
@@ -45,10 +44,28 @@ struct Camera
     return { cosp * -sin(-yaw), cosp * cos(-yaw), sin(-pitch)};
   }
 
-  glm::mat4 getView() const
+  ProjType getProjectionType() const { return m_projType; }
+
+  void setProjection(ProjType type)
   {
-    return glm::lookAt(position, position + forward(), up());
+    if (type == m_projType)
+      return;
+
+    m_projType = type;
+    rebuildProjectionMatrix();
   }
+
+  void setViewport(int width, int height)
+  {
+    if (width == m_viewport.x && height == m_viewport.y)
+      return;
+    m_viewport = { width, height };
+    rebuildProjectionMatrix();
+  }
+
+  glm::mat4 getView() const { return glm::lookAt(position, position + forward(), up()); }
+
+  glm::mat4 getProj() const { return m_proj; }
 
   void update(float timestep, const Window &window)
   {
@@ -86,4 +103,18 @@ struct Camera
     yaw = glm::mod(yaw, TWO_PI); // ensures no overgrowth 
     pitch = glm::clamp(pitch, -HALF_PI, HALF_PI); // ensures no screen inversion
   }
+
+private:
+  void rebuildProjectionMatrix()
+  {
+    float ratio = m_viewport.x / (float)m_viewport.y;
+    if (m_projType == ProjType::perspective)
+      m_proj = glm::perspective(70.0f, ratio, 0.1f, 50.0f);
+    else
+      m_proj = glm::ortho(0.0f, (float)m_viewport.x, 0.0f, (float)m_viewport.y);
+  }
+
+  ProjType m_projType = ProjType::perspective;
+  glm::ivec2 m_viewport;
+  glm::mat4  m_proj;
 };

@@ -6,10 +6,12 @@
 #include <string>
 #include <string_view>
 
+class App;
+
 class Window
 {
 public:
-  Window() noexcept;
+  Window(App &app) noexcept;
   Window(Window &&mv) noexcept;
   ~Window() noexcept;
 
@@ -24,14 +26,9 @@ public:
 
   bool isOpen() const;
 
-protected:
-  void onResize(int width, int height);
-  void onClick(int button, int action, int mods);
-  void onKeyboard(int key, int scancode, int action, int mods);
-
 private:
   void initEventCallbacks();
 
-  glm::dvec2 m_cursorSave;
+  App &m_app;
   GLFWwindow *m_handle = nullptr;
 };

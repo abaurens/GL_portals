@@ -16,6 +16,8 @@ struct Mesh
   std::vector<glm::vec2> uvs;
   std::vector<GLushort>  indicies;
 
+  glm::mat4 transform = glm::mat4(1);
+
   Mesh() noexcept;
   Mesh(Mesh &&mv) noexcept;
   Mesh(const Mesh &mv);
@@ -27,6 +29,9 @@ struct Mesh
     vertices = other.vertices;
     indicies = other.indicies;
 
+    transform = other.transform;
+
+
     m_is_messy = true;
     m_material = other.m_material;
 
@@ -36,8 +41,24 @@ struct Mesh
     return *this;
   }
 
+  Mesh &operator=(Mesh &&other) noexcept
+  {
+    uvs = std::move(other.uvs);
+    vertices = std::move(other.vertices);
+    indicies = std::move(other.indicies);
 
-  glm::mat4 transform;
+    transform = other.transform;
+
+    m_uv_buffer = other.m_uv_buffer;
+    m_vertex_buffer = other.m_vertex_buffer;
+    m_vertex_array = other.m_vertex_array;
+
+    m_is_messy = other.m_is_messy;
+    m_material = other.m_material;
+
+    other.reset();
+    return *this;
+  }
 
   void upload();
   void clear();
@@ -47,6 +68,8 @@ struct Mesh
   void setMaterial(const Material *material);
 
 private:
+  void reset();
+
   const Shader &getShader() const;
 
   void disableVertAttribs() const;

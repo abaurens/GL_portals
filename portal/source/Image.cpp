@@ -21,6 +21,7 @@ Image::~Image()
 
 bool Image::load(const std::string_view path, int expected_channels)
 {
+  clear();
   m_data = stbi_load(path.data(), &m_width, &m_height, &m_channels, expected_channels);
 
   if (!m_data)

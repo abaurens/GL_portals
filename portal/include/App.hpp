@@ -2,11 +2,7 @@
 
 #include "portal.hpp"
 
-#include "Mesh.hpp"
-#include "Camera.hpp"
-#include "Shader.hpp"
-#include "Texture.hpp"
-#include "Material.hpp"
+#include "Scene.hpp"
 #include "Window.hpp"
 
 #include <vector>
@@ -14,34 +10,33 @@
 class App
 {
 public:
+  App();
 
   void run();
 
 protected:
-  void onInit();
-  void onLoop();
-  void onStop();
+  void init();
+  void loop();
+  void stop();
 
   void update(float timestep);
   void render();
 
 public:
+  void onResize(Window &window, int width, int height);
+  void onClick(Window &window, int button, int action, int mods);
+  void onKeyboard(Window &window, int key, int scancode, int action, int mods);
+
   static inline bool paused = true;
-  static inline glm::mat4 proj = glm::mat4(1);
 
 private:
+  bool running = false;
 
-
-  Shader flat;
-
-  Shader flat_tex;
-  Texture texture;
-
-  Material flat_tex_mat;
-  Material flat_white_mat;
-
-  // globally accessible
   Camera camera;
   Window window;
-  std::vector<Mesh> meshes;
+
+  Scene scene;
+
+private:
+  glm::dvec2 m_cursorSave;
 };

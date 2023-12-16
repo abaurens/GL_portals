@@ -7,11 +7,10 @@
 
 // event propagation
 
-Window::Window() noexcept : m_cursorSave(0, 0), m_handle(nullptr) {}
+Window::Window(App &app) noexcept : m_app(app), m_handle(nullptr) {}
 
-Window::Window(Window &&mv) noexcept : m_cursorSave(mv.m_cursorSave), m_handle(mv.m_handle)
+Window::Window(Window &&mv) noexcept : m_app(mv.m_app), m_handle(mv.m_handle)
 {
-  mv.m_cursorSave = { 0, 0 };
   mv.m_handle = nullptr;
 }
 
@@ -47,7 +46,7 @@ bool Window::create(const std::string_view title, int width, int height)
   if (glGetString == nullptr)
     gladLoadGL(glfwGetProcAddress);
 
-  onResize(width, height);
+  m_app.onResize(*this, width, height);
   return true;
 }
 
@@ -65,8 +64,6 @@ void Window::clear()
 {
   if (m_handle)
     glfwDestroyWindow(m_handle);
-
-  m_cursorSave = { 0, 0 };
   m_handle = nullptr;
 }
 
@@ -86,56 +83,6 @@ void Window::setVSync(bool enabled)
 }
 
 
-void Window::onResize(int width, int height)
-{
-  float ratio;
-  ratio = width / (float)height;
-
-  glViewport(0, 0, width, height);
-  App::proj = glm::perspective(70.0f, ratio, 0.1f, 50.0f);
-}
-
-void Window::onClick(int button, int action, int mods)
-{
-  if (button == GLFW_MOUSE_BUTTON_1 && action == GLFW_PRESS && App::paused)
-  {
-    App::paused = false;
-    glfwGetCursorPos(m_handle, &m_cursorSave.x, &m_cursorSave.y);
-    glfwSetInputMode(m_handle, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-    glfwSetCursorPos(m_handle, 0, 0);
-  }
-}
-
-void Window::onKeyboard(int key, int scancode, int action, int mods)
-{
-  if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
-  {
-    if (!App::paused)
-    {
-      App::paused = true;
-      glfwSetInputMode(m_handle, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-      glfwSetCursorPos(m_handle, m_cursorSave.x, m_cursorSave.y);
-    }
-    else
-      close();
-  }
-
-  if (action != GLFW_PRESS)
-    return;
-
-  //if (key == GLFW_KEY_P)
-  //{
-  //  std::cout << "Camera:\n"
-  //    << "  x: " << camera.position.x << "\n"
-  //    << "  y: " << camera.position.y << "\n"
-  //    << "  z: " << camera.position.z << "\n"
-  //    << "  yaw: " << camera.yaw << "\n"
-  //    << "  pitch: " << camera.pitch << std::endl;
-  //}
-}
-
-
-
 
 void Window::initEventCallbacks()
 {
@@ -143,17 +90,17 @@ void Window::initEventCallbacks()
 
   glfwSetFramebufferSizeCallback(m_handle, [](GLFWwindow *ptr, int width, int height) {
     Window *window = (Window *)glfwGetWindowUserPointer(ptr);
-    return window->onResize(width, height);
+    return window->m_app.onResize(*window, width, height);
   });
 
   glfwSetMouseButtonCallback(m_handle, [](GLFWwindow *ptr, int button, int action, int mods)
   {
     Window *window = (Window *)glfwGetWindowUserPointer(ptr);
-    return window->onClick(button, action, mods);
+    return window->m_app.onClick(*window, button, action, mods);
   });
 
   glfwSetKeyCallback(m_handle, [](GLFWwindow *ptr, int key, int scancode, int action, int mods) {
     Window *window = (Window *)glfwGetWindowUserPointer(ptr);
-    return window->onKeyboard(key, scancode, action, mods);
+    return window->m_app.onKeyboard(*window, key, scancode, action, mods);
   });
 }
