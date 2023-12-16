@@ -1,53 +1,61 @@
 #pragma once
 
-#include "Shader.hpp"
 
+#include "Camera.hpp"
+#include "Material.hpp"
+
+
+#include <glad/gl.h>
 #include <glm/glm.hpp>
-#include <glad/glad.h>
 
 #include <vector>
 
 struct Mesh
 {
   std::vector<glm::vec3> vertices;
-  //std::vector<glm::vec2> uvs;
+  std::vector<glm::vec2> uvs;
   std::vector<GLushort>  indicies;
+
+  Mesh() noexcept;
+  Mesh(Mesh &&mv) noexcept;
+  Mesh(const Mesh &mv);
+  ~Mesh();
+
+  constexpr Mesh &operator=(const Mesh &other)
+  {
+    uvs = other.uvs;
+    vertices = other.vertices;
+    indicies = other.indicies;
+
+    m_is_messy = true;
+    m_material = other.m_material;
+
+    if (!other.m_is_messy && glIsVertexArray(other.m_vertex_array))
+      upload();
+
+    return *this;
+  }
+
 
   glm::mat4 transform;
 
-  void upload(const Shader &shader)
-  {
-    glGenVertexArrays(1, &vertex_array);
-    glBindVertexArray(vertex_array);
+  void upload();
+  void clear();
 
-    glGenBuffers(1, &vertex_buffer);
-    glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
-    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(glm::vec3), &vertices[0], GL_STATIC_DRAW);
+  void render(const Camera &camera) const;
 
-    GLint vPos_loc = shader.getAttribute("vPos");
-    glEnableVertexAttribArray(vPos_loc);
-    glVertexAttribPointer(vPos_loc, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void *)0);
-    //glEnableVertexAttribArray(vcol_location);
-    //glVertexAttribPointer(vcol_location, 3, GL_FLOAT, GL_FALSE,
-    //                      sizeof(vertices[0]), (void *)(sizeof(float) * 2));
-  }
-
-  void clear()
-  {
-    if (glIsBuffer(vertex_buffer))
-      glDeleteBuffers(1, &vertex_buffer);
-    
-    if (glIsVertexArray(vertex_array))
-      glDeleteVertexArrays(1, &vertex_array);
-
-    vertices.clear();
-    indicies.clear();
-    transform = glm::mat4(1);
-
-    vertex_buffer = 0;
-    vertex_array = 0;
-  }
+  void setMaterial(const Material *material);
 
 private:
-  GLuint vertex_buffer, vertex_array;
+  const Shader &getShader() const;
+
+  void disableVertAttribs() const;
+  void enableVertAttribs() const;
+
+  bool   m_is_messy = true;
+  const Material *m_material = nullptr;
+
+  GLuint m_uv_buffer;
+  GLuint m_vertex_buffer;
+  GLuint m_vertex_array;
 };

@@ -1,10 +1,12 @@
 #pragma once
 
-#include <math.h>
+#include "Window.hpp"
 
 #include <glm/glm.hpp>
 #include <glm/ext.hpp>
 #include <GLFW/glfw3.h>
+
+#include <math.h>
 
 struct Camera
 {
@@ -34,7 +36,6 @@ struct Camera
     return { -sin(-yaw), cos(-yaw), 0 };
   }
 
-  
   glm::vec3 forward() const
   {
     // Forward vector from spherical coordinates
@@ -49,7 +50,7 @@ struct Camera
     return glm::lookAt(position, position + forward(), up());
   }
 
-  void update(float timestep, GLFWwindow *window)
+  void update(float timestep, const Window &window)
   {
     constexpr float TOLLERANCE = 0.00001f;
     constexpr float HALF_PI = ((float)M_PI_2 - TOLLERANCE);

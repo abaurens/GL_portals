@@ -1,6 +1,8 @@
-#version 110
+#version 330 core
 
-varying vec3 color;
+uniform sampler2D textureSampler;
+
+in vec2 uv;
 
 float lerp(float alpha, float a, float b)
 {
@@ -12,6 +14,6 @@ void main()
   float dist = (gl_FragCoord.w / gl_FragCoord.z);
   float atenuation = lerp(dist, 0.3, 0.8);
 
-  gl_FragColor = vec4(color, 1.0);
-  gl_FragColor *= atenuation;
+  gl_FragColor = texture(textureSampler, uv);
+  gl_FragColor *= min(atenuation, 1.0);
 }

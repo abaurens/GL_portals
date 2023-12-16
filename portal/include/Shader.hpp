@@ -1,7 +1,7 @@
 #pragma once
 
 
-#include <glad/glad.h>
+#include <glad/gl.h>
 
 #include <map>
 #include <string>
@@ -36,7 +36,11 @@ public:
   GLint getUniform(const std::string &name) const;
   GLint getAttribute(const std::string &name) const;
 
+  static const Shader &getDefaultShader();
+
 private:
+  static Shader default_shader;
+
   void scanUniforms();
   void scanAttributes();
   void getProgramErrors();

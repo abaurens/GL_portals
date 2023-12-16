@@ -4,6 +4,45 @@
 #include <fstream>
 #include <iostream>
 
+
+static constexpr std::string_view default_vertex = R"(
+  #version 110
+  
+  uniform mat4 MVP;
+  attribute vec3 vPos;
+  
+  void main()
+  {
+    gl_Position = MVP * vec4(vPos, 1.0);
+  }
+)";
+
+static constexpr std::string_view default_fragment = R"(
+  #version 110
+  
+  void main()
+  {
+    gl_FragColor = vec4(1.0, 0.0, 1.0, 1.0);
+  }
+)";
+
+Shader Shader::default_shader;
+
+const Shader &Shader::getDefaultShader()
+{
+  if (!default_shader.valid())
+  {
+    default_shader.addSource(Type::vertex, default_vertex);
+    default_shader.addSource(Type::fragment, default_fragment);
+    default_shader.compile();
+  }
+
+  if (!default_shader.valid())
+    abort();
+  return default_shader;
+}
+
+
 bool Shader::addSource(Type type, const std::string_view &source)
 {
   GLuint shaderId = getOrCreate(type);
@@ -154,13 +193,13 @@ void Shader::scanUniforms()
 
   buffer.resize(longestUniform);
   
-  std::cout << "Found : " << uniforms << " uniforms" << std::endl;
+  //std::cout << "Found : " << uniforms << " uniforms" << std::endl;
   for (GLint i = 0; i < uniforms; ++i)
   {
     glGetActiveUniform(m_program, (GLuint)i, longestUniform, &length, &size, &type, buffer.data());
 
     name.assign(buffer.data());
-    std::cout << "  [" << i << "]: " << name << "(" << m_uniforms[name] << ")" << std::endl;
+    //std::cout << "  [" << i << "]: " << name << "(" << m_uniforms[name] << ")" << std::endl;
     m_uniforms[name] = glGetUniformLocation(m_program, name.c_str());
   }
 }
@@ -181,14 +220,14 @@ void Shader::scanAttributes()
 
   buffer.resize(longestAttribute);
 
-  std::cout << "Found : " << attributes << " attributes" << std::endl;
+  //std::cout << "Found : " << attributes << " attributes" << std::endl;
   for (GLint i = 0; i < attributes; ++i)
   {
     glGetActiveAttrib(m_program, (GLuint)i, longestAttribute, &length, &size, &type, buffer.data());
 
     name.assign(buffer.data());
     m_attributes[name] = glGetAttribLocation(m_program, name.c_str());
-    std::cout << "  [" << i << "]: " << name << "(" << m_attributes[name] << ")" << std::endl;
+    //std::cout << "  [" << i << "]: " << name << "(" << m_attributes[name] << ")" << std::endl;
   }
 }
 

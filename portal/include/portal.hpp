@@ -1,11 +1,16 @@
 #pragma once
 
+#if defined(_MSC_VER) || defined(WIN32) || defined(_WIN32) || defined(__WIN32__) \
+ || defined(WIN64) || defined(_WIN64) || defined(__WIN64__)
+#include <windows.h>
+#endif
+
 #define PROJECT_NAME "portal"
 
-void init();
-void loop();
+#include "Mesh.hpp"
 
-void render();
-void update(float);
+#include <glm/glm.hpp>
 
-void clean_quit();
+// portal.cpp
+Mesh create_portal_mesh();
+glm::mat4 portal_view(glm::mat4 orig_view, Mesh *src, Mesh *dst);
