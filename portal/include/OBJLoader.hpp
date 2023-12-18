@@ -2,10 +2,11 @@
 
 #include "Mesh.hpp"
 
-#include <vector>
+#include <map>
+#include <string>
 #include <filesystem>
 
 namespace OBJ
 {
-  std::vector<Mesh> load(const std::filesystem::path &path);
+  std::map<std::string, Mesh> load(const std::filesystem::path &path, const std::string &defaultName = "");
 }

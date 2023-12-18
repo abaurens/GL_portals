@@ -1,0 +1,150 @@
+{
+  // the name of the scene
+  "name": "TestScene",
+
+  // Lists the meshes used by the scene
+  "meshes": {
+    "portal": {
+      "positions": [
+        [ 1.0, 0.0, 1.0 ],
+        [ -1.0, 0.0, 1.0 ],
+        [ 1.0, 0.0, -1.0 ],
+        [ -1.0, 0.0, -1.0 ]
+      ],
+      "uvs": [
+        [ 0, 0 ],
+        [ 1, 0 ],
+        [ 0, 1 ],
+        [ 1, 1 ]
+      ],
+      "indicies": [ 0, 1, 2, 2, 1, 3 ]
+    },
+    "cube": "StorageCube.obj",
+    "wall": "Surface.obj"
+  },
+
+  // list the textures used by the scene
+  "textures": {
+    "cube": "Metal_box.png",
+    "test": "test.png",
+    "wall": "white_wall_tile003b.png"
+  },
+
+  // Lists the shaders used by the scene
+  "shaders": {
+    "white": {
+      "vertex": "flat.vert",
+      "fragment": "flat.frag"
+    },
+    "text": {
+      "vertex": "flat_texture.vert",
+      "fragment": "flat_texture.frag"
+    }
+  },
+
+  // Lists the materials (composed of at least 1 shader)
+  "materials": {
+    "white": {
+      "shader": "white"
+    },
+    "test": {
+      "shader": "text",
+      "textures": [ "test" ]
+    },
+    "cube": {
+      "shader": "text",
+      "textures": [ "cube" ]
+    },
+    "wall": {
+      "shader": "text",
+      "textures": [ "wall" ]
+    }
+  },
+
+  "scene": {
+    // place a "cube" prop at {0, 0, 0}
+    "cube": {
+      "mesh": "cube",
+      "material": "cube",
+      "position": [ 0.0, 0.0, -1.5 ],
+      "rotation": [ 0.0 ],
+      "scale": [ 0.02 ]
+    },
+
+    "blue_portal": {
+      "mesh": "portal",
+      "material": "test",
+      "position": [ 0.0, -2.0, -1.0 ]
+    },
+    "orange_portal": {
+      "mesh": "portal",
+      //"material": "test",
+      "position": [ -2.0, 0.0, -1.2 ],
+      "rotation": [ 0, 0, -90 ]
+    },
+
+    "floor": {
+      "mesh": "wall",
+      "material": "wall",
+      "position": [ 0, 0, -2 ],
+      "rotation": [ 0, 0, 0 ],
+      "scale": [ 0.2 ]
+    },
+    "floor2": {
+      "mesh": "wall",
+      "material": "wall",
+      "position": [ 0, 2.4, -2 ],
+      "rotation": [ 0, 0, 0 ],
+      "scale": [ 0.2 ]
+    },
+    "floor3": {
+      "mesh": "wall",
+      "material": "wall",
+      "position": [ 0, -2.4, -2 ],
+      "rotation": [ 0, 0, 0 ],
+      "scale": [ 0.2 ]
+    },
+    "floor4": {
+      "mesh": "wall",
+      "material": "wall",
+      "position": [ 2.4, 0, -2 ],
+      "rotation": [ 0, 0, 0 ],
+      "scale": [ 0.2 ]
+    },
+    "floor5": {
+      "mesh": "wall",
+      "material": "wall",
+      "position": [ -2.4, 0, -2 ],
+      "rotation": [ 0, 0, 0 ],
+      "scale": [ 0.2 ]
+    },
+    "floor6": {
+      "mesh": "wall",
+      "material": "wall",
+      "position": [ 2.4, 2.4, -2 ],
+      "rotation": [ 0, 0, 0 ],
+      "scale": [ 0.2 ]
+    },
+    "floor7": {
+      "mesh": "wall",
+      "material": "wall",
+      "position": [ 2.4, -2.4, -2 ],
+      "rotation": [ 0, 0, 0 ],
+      "scale": [ 0.2 ]
+    },
+    "floor8": {
+      "mesh": "wall",
+      "material": "wall",
+      "position": [ -2.4, 2.4, -2 ],
+      "rotation": [ 0, 0, 0 ],
+      "scale": [ 0.2 ]
+    },
+    "floor9": {
+      "mesh": "wall",
+      "material": "wall",
+      "position": [ -2.4, -2.4, -2 ],
+      "rotation": [ 0, 0, 0 ],
+      "scale": [ 0.2 ]
+    }
+  }
+}

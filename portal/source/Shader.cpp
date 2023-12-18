@@ -43,6 +43,69 @@ const Shader &Shader::getDefaultShader()
 }
 
 
+
+Shader::Shader() noexcept : m_valid(false), m_program(0) {}
+
+Shader::Shader(Shader &&mv) noexcept :
+  m_valid(mv.m_valid),
+  m_program(mv.m_program),
+  m_shaders(std::move(mv.m_shaders)),
+  m_uniforms(std::move(mv.m_uniforms)),
+  m_attributes(std::move(mv.m_attributes))
+{
+  mv.m_valid = false;
+  mv.m_program = 0;
+  mv.m_shaders.clear();
+  mv.m_uniforms.clear();
+  mv.m_attributes.clear();
+}
+
+Shader &Shader::operator=(Shader &&other) noexcept
+{
+  m_valid = other.m_valid;
+  m_program = other.m_program;
+  m_shaders = std::move(other.m_shaders);
+  m_uniforms = std::move(other.m_uniforms);
+  m_attributes = std::move(other.m_attributes);
+
+  other.m_valid = false;
+  other.m_program = 0;
+  other.m_shaders.clear();
+  other.m_uniforms.clear();
+  other.m_attributes.clear();
+
+  return *this;
+}
+
+
+bool Shader::addSource(Type type, const std::vector<std::string_view> &source)
+{
+  GLuint shaderId = getOrCreate(type);
+
+  // compile the source code
+  const char **src = new const char *[source.size() + 1];
+
+  for (uint32_t i = 0; i < source.size(); ++i)
+    src[i] = source[i].data();
+  src[source.size()] = nullptr;
+
+  glShaderSource(shaderId, (GLsizei)source.size(), src, NULL);
+  glCompileShader(shaderId);
+
+  // error management
+  GLint result;
+  glGetShaderiv(shaderId, GL_COMPILE_STATUS, &result);
+  if (result != GL_TRUE)
+  {
+    getShaderErrors(shaderId);
+    return false;
+  }
+
+  m_valid = false;
+  return true;
+}
+
+
 bool Shader::addSource(Type type, const std::string_view &source)
 {
   GLuint shaderId = getOrCreate(type);
@@ -177,6 +240,43 @@ GLint Shader::getAttribute(const std::string &name) const
   return m_attributes.at(name);
 }
 
+
+Shader::Type Shader::typeFromString(const std::string_view name)
+{
+  if (name == "vertex")
+    return Type::vertex;
+  if (name == "fragment")
+    return Type::fragment;
+  if (name == "compute")
+    return Type::compute;
+  if (name == "geometry")
+    return Type::geometry;
+  if (name == "tesselation")
+    return Type::tesselation;
+  return Type::none;
+}
+
+GLenum Shader::typeToGl(Type type)
+{
+  switch (type)
+  {
+  case Type::vertex:
+    return GL_VERTEX_SHADER;
+  case Type::fragment:
+    return GL_FRAGMENT_SHADER;
+  case Type::compute:
+    return GL_COMPUTE_SHADER;
+  case Type::geometry:
+    return GL_GEOMETRY_SHADER;
+  case Type::tesselation:
+    return GL_TESS_EVALUATION_SHADER;
+  default:
+    return 0;
+  }
+}
+
+
+
 void Shader::scanUniforms()
 {
   GLint uniforms;
@@ -285,7 +385,7 @@ GLuint Shader::getOrCreate(Type type)
 
   if (!glIsShader(m_shaders[type]))
   {
-    result = glCreateShader(static_cast<GLenum>(type));
+    result = glCreateShader(typeToGl(type));
     m_shaders[type] = result;
   }
   else

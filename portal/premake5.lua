@@ -31,6 +31,7 @@ project "portal"
 	"%{IncludeDir.glm}",
     "%{IncludeDir.glad}",
     "%{IncludeDir.glfw}",
+    "%{IncludeDir.json}",
     "include/"
   }
 

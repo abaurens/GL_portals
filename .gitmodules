@@ -9,3 +9,7 @@
 	path = libs/glad
 	url = git@github.com:Minecraft-Clone/libGlad.git
 	branch = premake
+[submodule "libs/json"]
+	path = libs/json
+	url = git@github.com:abaurens/json.git
+	branch = no-test

@@ -1,5 +1,7 @@
 #include "OBJLoader.hpp"
 
+#include "StringUtils.hpp"
+
 #include <fstream>
 #include <iostream>
 
@@ -26,64 +28,6 @@ struct OBJData
     positions.clear();
   }
 };
-
-#include <stdarg.h>
-#define vscprintf _vscprintf
-
-
-int vasprintf(char **strp, const char *format, va_list ap)
-{
-  int len = vscprintf(format, ap);
-  if (len == -1)
-    return -1;
-  char *str = (char *)malloc((size_t)len + 1);
-  if (!str)
-    return -1;
-  int retval = vsnprintf(str, len + 1, format, ap);
-  if (retval == -1) {
-    free(str);
-    return -1;
-  }
-  *strp = str;
-  return retval;
-}
-
-int asprintf(char **strp, const char *format, ...)
-{
-  va_list ap;
-  va_start(ap, format);
-  int retval = vasprintf(strp, format, ap);
-  va_end(ap);
-  return retval;
-}
-
-
-
-
-// trim from start (in place)
-static inline void ltrim(std::string &s) {
-  s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](unsigned char ch) {
-    return !std::isspace(ch);
-  }));
-}
-
-// trim from end (in place)
-static inline void rtrim(std::string &s) {
-  s.erase(std::find_if(s.rbegin(), s.rend(), [](unsigned char ch) {
-    return !std::isspace(ch);
-  }).base(), s.end());
-}
-
-// trim from both ends (in place)
-static inline void trim(std::string &s) {
-  rtrim(s);
-  ltrim(s);
-}
-
-
-
-
-
 
 static bool parse_face(OBJData &mesh, const std::string_view data)
 {
@@ -190,11 +134,11 @@ static bool parseLine(OBJData &mesh, const std::string_view type, const std::str
 
 static Mesh toMesh(OBJData &data)
 {
-  std::cout << "Mesh loaded:\n"
-    << "  " << data.positions.size() << " vertices\n"
-    << "  " << data.uvs.size() << " texture coordinates\n"
-    << "  " << data.normals.size() << " normals\n"
-    << "  " << data.faces.size() << " faces" << std::endl;
+  //std::cout << "Mesh loaded:\n"
+  //  << "  " << data.positions.size() << " vertices\n"
+  //  << "  " << data.uvs.size() << " texture coordinates\n"
+  //  << "  " << data.normals.size() << " normals\n"
+  //  << "  " << data.faces.size() << " faces" << std::endl;
 
   Mesh mesh;
   mesh.vertices = std::move(data.positions);
@@ -233,38 +177,40 @@ static Mesh toMesh(OBJData &data)
     storeVertex(face.vertices[2]);
   }
 
-  std::cout << "Mesh build:\n"
-    << " " << mesh.vertices.size() << " vertices\n"
-    << " " << mesh.uvs.size() << " uvs\n"
-    //<< " " << mesh.normals.size() << " normals\n"
-    << " " << mesh.indicies.size() << " indicies" << std::endl;
+  //std::cout << "Mesh build:\n"
+  //  << " " << mesh.vertices.size() << " vertices\n"
+  //  << " " << mesh.uvs.size() << " uvs\n"
+  //  //<< " " << mesh.normals.size() << " normals\n"
+  //  << " " << mesh.indicies.size() << " indicies" << std::endl;
 
   mesh.upload();
   return mesh;
 }
 
-std::vector<Mesh> OBJ::load(const std::filesystem::path &path)
+std::map<std::string, Mesh> OBJ::load(const std::filesystem::path &path, const std::string &defaultName)
 {
+  std::map<std::string, Mesh> meshes;
+
   if (!std::filesystem::exists(path))
   {
     std::cout << "OBJ::load error: " << path << " doesnt exist." << std::endl;
-    abort();
+    return meshes;
   }
 
   std::ifstream ifs;
   ifs.open(path);
   if (!ifs)
   {
-    std::cout << "OBJ::load error: " << path << " is not accessible" << std::endl;
-    abort();
+    std::cout << "OBJ::load error: " << path << " is not accessible." << std::endl;
+    return meshes;
   }
 
   OBJData obj;
-  std::vector<Mesh> meshes;
 
   obj.clear();
 
   std::string line;
+  std::string name = defaultName;
   while (std::getline(ifs, line))
   {
     size_t end = line.find_first_of('#');
@@ -275,6 +221,12 @@ std::vector<Mesh> OBJ::load(const std::filesystem::path &path)
     if (line.empty())
       continue;
 
+    if (!is_ascii(line))
+    {
+      std::cout << "OBJ::load error: non ascii data in file (ignoring file)." << std::endl;
+      return std::map<std::string, Mesh>();
+    }
+
     end = line.find_first_of(' ');
     std::string data = line;
     std::string type = data.substr(0, end);
@@ -283,10 +235,9 @@ std::vector<Mesh> OBJ::load(const std::filesystem::path &path)
     if (type == "o")
     {
       if (!obj.faces.empty())
-      {
-        meshes.push_back(toMesh(obj));
-      }
+        meshes.emplace(name, toMesh(obj));
       obj.clear();
+      name = data;
     }
     else if (!parseLine(obj, type, data))
     {
@@ -296,7 +247,7 @@ std::vector<Mesh> OBJ::load(const std::filesystem::path &path)
   }
 
   if (!obj.faces.empty())
-    meshes.push_back(toMesh(obj));
+    meshes.emplace(name, toMesh(obj));
 
   return meshes;
 }

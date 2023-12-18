@@ -8,24 +8,43 @@
 #include "Texture.hpp"
 #include "Material.hpp"
 
+#include "Prop.hpp"
+
+#include <nlohmann/json.hpp>
+
+#include <map>
+#include <filesystem>
+
 class Scene
 {
 public:
-  void init();
+  ~Scene() { cleanup(); };
+
+  bool load(const std::filesystem::path &path);
   void cleanup();
 
-  void render(const Camera &camera);
+  void render(const Camera &camera) const;
 
 private:
-  Shader flat;
+  void load_meshes(const nlohmann::json &json_meshes);
+  void parse_mesh(const std::string &name, const nlohmann::json &json_mesh);
 
-  Shader flat_tex;
-  Texture texture;
-  Texture storageCubeTexture;
+  void load_shaders(const nlohmann::json &json_shaders);
+  void parse_shader(const std::string &name, const nlohmann::json &json_shader);
 
-  Material flat_tex_mat;
-  Material flat_white_mat;
-  Material storageCube_mat;
+  void load_textures(const nlohmann::json &json_textures);
+  void parse_texture(const std::string &name, const nlohmann::json &json_texture);
 
-  std::vector<Mesh> meshes;
+  void load_materials(const nlohmann::json &json_materials);
+  void parse_material(const std::string &name, const nlohmann::json &json_texture);
+
+  void load_scene(const nlohmann::json &json_scene);
+  void parse_prop(const std::string &name, const nlohmann::json &json_prop);
+
+  std::map<std::string, Mesh> meshes;
+  std::map<std::string, Shader> shaders;
+  std::map<std::string, Texture> textures;
+  std::map<std::string, Material> materials;
+
+  std::map<std::string, Prop> props;
 };

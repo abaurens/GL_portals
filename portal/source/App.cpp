@@ -31,7 +31,7 @@ void App::init()
   window.create(PROJECT_NAME, 1280, 720);
   window.setVSync(true);
 
-  scene.init();
+  scene.load("./assets/scene.json");
 
   // set camera position so they both appear on start
   camera.position = { 3.2, 2, 1.0 };

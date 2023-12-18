@@ -16,12 +16,12 @@ struct Mesh
   std::vector<glm::vec2> uvs;
   std::vector<GLushort>  indicies;
 
-  glm::mat4 transform = glm::mat4(1);
-
   Mesh() noexcept;
   Mesh(Mesh &&mv) noexcept;
   Mesh(const Mesh &mv);
   ~Mesh();
+
+  constexpr operator bool() const { return !m_is_messy; }
 
   constexpr Mesh &operator=(const Mesh &other)
   {
@@ -29,11 +29,9 @@ struct Mesh
     vertices = other.vertices;
     indicies = other.indicies;
 
-    transform = other.transform;
-
-
+    //transform = other.transform;
+    //m_material = other.m_material;
     m_is_messy = true;
-    m_material = other.m_material;
 
     if (!other.m_is_messy && glIsVertexArray(other.m_vertex_array))
       upload();
@@ -47,14 +45,12 @@ struct Mesh
     vertices = std::move(other.vertices);
     indicies = std::move(other.indicies);
 
-    transform = other.transform;
+    m_is_messy = other.m_is_messy;
 
     m_uv_buffer = other.m_uv_buffer;
     m_vertex_buffer = other.m_vertex_buffer;
     m_vertex_array = other.m_vertex_array;
 
-    m_is_messy = other.m_is_messy;
-    m_material = other.m_material;
 
     other.reset();
     return *this;
@@ -63,20 +59,15 @@ struct Mesh
   void upload();
   void clear();
 
-  void render(const Camera &camera) const;
-
-  void setMaterial(const Material *material);
+  void render(const Camera &camera, const Shader &shader) const;
 
 private:
   void reset();
 
-  const Shader &getShader() const;
-
-  void disableVertAttribs() const;
-  void enableVertAttribs() const;
+  void disableVertAttribs(const Shader &shader) const;
+  void enableVertAttribs(const Shader &shader) const;
 
   bool   m_is_messy = true;
-  const Material *m_material = nullptr;
 
   GLuint m_uv_buffer;
   GLuint m_vertex_buffer;

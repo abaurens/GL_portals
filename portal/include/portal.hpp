@@ -13,4 +13,4 @@
 
 // portal.cpp
 Mesh create_portal_mesh();
-glm::mat4 portal_view(glm::mat4 orig_view, Mesh *src, Mesh *dst);
+//glm::mat4 portal_view(glm::mat4 orig_view, Mesh *src, Mesh *dst);

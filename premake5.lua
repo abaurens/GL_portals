@@ -52,6 +52,7 @@ group "Dependencies"
   include("libs/glm")
   include("libs/glad")
   include("libs/glfw")
+  include("libs/json")
 
 group ""
   include("portal")
