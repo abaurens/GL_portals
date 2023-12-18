@@ -14,8 +14,7 @@ struct Prop
 {
   glm::vec3 scale = { 1, 1, 1 };
   glm::vec3 pos = { 0, 0, 0 };
-  glm::vec3 rot = { 0, 0, 0 };
-  //glm::quat rot = glm::quat({ 0, 0, 0 });
+  glm::quat rot = glm::quat({ 0, 0, 0 });
 
   Material *material = nullptr;
   Mesh *mesh = nullptr;

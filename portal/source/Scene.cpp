@@ -535,7 +535,7 @@ void Scene::parse_prop(const std::string &name, const json &json_prop)
         rot[i] = (*it)[i % it->size()].get<float>();
 
       rot = glm::radians(rot);
-      prop.rot = rot;
+      prop.rot = glm::quat(rot);
     }
   }
 

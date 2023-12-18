@@ -34,7 +34,7 @@ void Prop::render(const Camera &camera) const
   glm::mat4 trns = glm::mat4(1);
 
   trns = trns * glm::translate(glm::mat4(1), pos);
-  trns = trns * glm::mat4_cast(glm::quat({ rot.x, rot.y, rot.z }));
+  trns = trns * glm::mat4_cast(rot);
   trns = trns * glm::scale(glm::mat4(1), scale);
 
   const glm::mat4 mvp = camera.getProj() * camera.getView() * trns;

@@ -1,15 +1,8 @@
 #include "portal.hpp"
 
 #include "Mesh.hpp"
-#include "Image.hpp"
-#include "Camera.hpp"
-#include "Shader.hpp"
-#include "Window.hpp"
-#include "Texture.hpp"
 
-#include <glad/gl.h>
 #include <glm/glm.hpp>
-#include <GLFW/glfw3.h>
 
 // portal 
 //static glm::mat4 portal_view(glm::mat4 orig_view, Mesh *src, Mesh *dst)
@@ -28,40 +21,3 @@
 //    ;
 //  return portal_cam;
 //}
-
-
-Mesh create_portal_mesh()
-{
-  Mesh portal;
-
-  const glm::vec3 portal_vertices[] = {
-    glm::vec3( 1, 0,  1),
-    glm::vec3(-1, 0,  1),
-    glm::vec3( 1, 0, -1),
-    glm::vec3(-1, 0, -1),
-  };
-
-  const glm::vec2 portal_uvs[] = {
-    glm::vec2(0, 0),
-    glm::vec2(1, 0),
-    glm::vec2(0, 1),
-    glm::vec2(1, 1),
-  };
-
-  const GLushort portal_elements[] = {
-    0,1,2, 2,1,3,
-  };
-
-  for (unsigned int i = 0; i < sizeof(portal_vertices) / sizeof(portal_vertices[0]); i++)
-  {
-    portal.vertices.push_back(portal_vertices[i]);
-    portal.uvs.push_back(portal_uvs[i]);
-  }
-
-  for (unsigned int i = 0; i < sizeof(portal_elements) / sizeof(portal_elements[0]); i++)
-    portal.indicies.push_back(portal_elements[i]);
-
-  portal.upload();
-
-  return portal;
-}
