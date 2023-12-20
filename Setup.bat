@@ -9,6 +9,9 @@
 	)
 )
 
+git submodule update --init --recursive
+
+git submodule update --recursive --remote
 
 call premake\Windows\premake5.exe vs2022 || (
 	pause

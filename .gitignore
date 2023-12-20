@@ -12,10 +12,12 @@ bin/
 *.d
 
 # Compiled Object files
+bin/
+build/
 *.slo
 *.lo
 *.o
-*.obj
+#*.obj
 
 # Precompiled Headers
 *.gch
