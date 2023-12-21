@@ -20,9 +20,11 @@ class Scene
 public:
   ~Scene() { cleanup(); };
 
+  bool reload();
   bool load(const std::filesystem::path &path);
   void cleanup();
 
+  void updateUI();
   void render(const Camera &camera) const;
 
 private:
@@ -41,10 +43,13 @@ private:
   void load_scene(const nlohmann::json &json_scene);
   void parse_prop(const std::string &name, const nlohmann::json &json_prop);
 
+  std::filesystem::path m_sceneFile;
+
   std::map<std::string, Mesh> meshes;
   std::map<std::string, Shader> shaders;
   std::map<std::string, Texture> textures;
   std::map<std::string, Material> materials;
 
+  std::string m_selected_prop = "";
   std::map<std::string, Prop> props;
 };

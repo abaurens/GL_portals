@@ -32,6 +32,8 @@ project "portal"
     "%{IncludeDir.glad}",
     "%{IncludeDir.glfw}",
     "%{IncludeDir.json}",
+    "%{IncludeDir.imgui}",
+    "%{IncludeDir.imguizmo}",
     "include/"
   }
 
@@ -39,8 +41,10 @@ project "portal"
   }
 
   links {
-    "glad", 
-    "glfw"
+    "glad",
+    "glfw",
+    "ImGui",
+    "ImGuizmo"
   }
 
   filter "system:linux"

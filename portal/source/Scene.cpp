@@ -3,11 +3,18 @@
 #include "OBJLoader.hpp"
 #include "StringUtils.hpp"
 
+#include "imgui.h"
+
 #include <fstream>
 #include <iostream>
 
 
 using json = nlohmann::json;
+
+bool Scene::reload()
+{
+  return load(m_sceneFile);
+}
 
 bool Scene::load(const std::filesystem::path &path)
 {
@@ -31,6 +38,8 @@ bool Scene::load(const std::filesystem::path &path)
     std::cout << "Scene loading error: JSON error\n"
       << "  " << e.what() << std::endl;
   }
+
+  props.clear();
 
   auto it = sceneFile.find("name");
   if (it != sceneFile.end())
@@ -56,6 +65,7 @@ bool Scene::load(const std::filesystem::path &path)
   if (it != sceneFile.end())
     load_scene(*it);
 
+  m_sceneFile = path;
   return true;
 }
 
@@ -75,6 +85,140 @@ void Scene::cleanup()
   shaders.clear();
   textures.clear();
   materials.clear();
+}
+
+void Scene::updateUI()
+{
+  bool first;
+  if (ImGui::Begin("Scene", 0, ImGuiWindowFlags_None & ImGuiWindowFlags_NoTitleBar))
+  {
+    if (ImGui::Button("Reload scene"))
+      reload();
+
+    if (ImGui::TreeNode("Shaders"))
+    {
+      first = true;
+      for (const auto &[name, _] : shaders)
+      {
+        if (!first)
+          ImGui::Separator();
+        ImGui::PushID(name.c_str());
+        ImGui::Text("%s", name.c_str());
+        ImGui::PopID();
+        first = false;
+      }
+
+      ImGui::TreePop();
+      ImGui::Spacing();
+    }
+    ImGui::Separator();
+
+    if (ImGui::TreeNode("Meshes"))
+    {
+      first = true;
+      for (const auto &[name, mesh] : meshes)
+      {
+        if (!first)
+          ImGui::Separator();
+        ImGui::PushID(name.c_str());
+        ImGui::Text("%s", name.c_str());
+        ImGui::PopID();
+        first = false;
+      }
+
+      ImGui::TreePop();
+      ImGui::Spacing();
+    }
+    ImGui::Separator();
+
+    if (ImGui::TreeNode("textures"))
+    {
+      first = true;
+      for (const auto &[name, texture] : textures)
+      {
+        if (!first)
+          ImGui::Separator();
+        ImGui::PushID(name.c_str());
+        ImGui::Text("%s", name.c_str());
+        ImGui::Image((ImTextureID)(uintptr_t)texture, ImVec2{ 256, 256 });
+        ImGui::PopID();
+        first = false;
+      }
+
+      ImGui::TreePop();
+      ImGui::Spacing();
+    }
+    ImGui::Separator();
+
+    if (ImGui::TreeNode("Materials"))
+    {
+      first = true;
+      for (const auto &[name, material] : materials)
+      {
+        if (!first)
+          ImGui::Separator();
+        ImGui::PushID(name.c_str());
+        ImGui::Text("%s", name.c_str());
+        //ImGui::Text("shader: %s", material.m_shader);
+        ImGui::PopID();
+        first = false;
+      }
+
+      ImGui::TreePop();
+      ImGui::Spacing();
+    }
+    ImGui::Separator();
+
+    if (ImGui::TreeNode("Props"))
+    {
+      ImGuiTreeNodeFlags base_flags = 
+        ImGuiTreeNodeFlags_OpenOnArrow |
+        ImGuiTreeNodeFlags_OpenOnDoubleClick |
+        ImGuiTreeNodeFlags_SpanAvailWidth |
+        ImGuiTreeNodeFlags_SpanFullWidth |
+        ImGuiTreeNodeFlags_Leaf |
+        ImGuiTreeNodeFlags_NoTreePushOnOpen;
+
+      std::string clicked_prop;
+      for (auto &[name, prop] : props)
+      {
+        ImGuiTreeNodeFlags leaf_flags = base_flags;
+        if (name == m_selected_prop)
+          leaf_flags |= ImGuiTreeNodeFlags_Selected;
+
+        ImGui::TreeNodeEx(name.c_str(), leaf_flags, "%s", name.c_str());
+        if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen())
+          clicked_prop = name;
+      }
+
+      if (!clicked_prop.empty())
+      {
+        if (ImGui::GetIO().KeyCtrl && clicked_prop == m_selected_prop)
+          m_selected_prop = nullptr;
+        else
+          m_selected_prop = clicked_prop;
+      }
+
+      ImGui::TreePop();
+      ImGui::Spacing();
+    }
+  }
+  ImGui::End();
+
+  ImGui::Begin("Properties");
+  if (!m_selected_prop.empty())
+  {
+    Prop &prop = props[m_selected_prop];
+
+    ImGui::DragFloat3("position", &prop.pos.x, 0.001f);
+
+    glm::vec3 rot = glm::degrees(glm::eulerAngles(prop.rot));
+    ImGui::DragFloat3("rotation", &rot.x, 1.0f);
+    prop.rot = glm::quat(glm::radians(rot));
+
+    ImGui::DragFloat3("scale", &prop.scale.x, 0.001f);
+  }
+  ImGui::End();
 }
 
 void Scene::render(const Camera &camera) const

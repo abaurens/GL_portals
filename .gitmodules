@@ -13,3 +13,11 @@
 	path = libs/json
 	url = git@github.com:abaurens/json.git
 	branch = no-test
+[submodule "libs/imgui"]
+	path = libs/imgui
+	url = git@github.com:abaurens/imgui.git
+	branch = docking-premake
+[submodule "libs/imguizmo"]
+	path = libs/imguizmo
+	url = git@github.com:abaurens/ImGuizmo.git
+	branch = premake

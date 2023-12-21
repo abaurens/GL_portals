@@ -3,10 +3,12 @@
 #include <chrono>
 #include <iostream>
 
+#include "imgui.h"
+
 using namespace std::chrono_literals;
 namespace chrono = std::chrono;
 
-App::App() : window(*this) {}
+App::App() : window(*this), ui(*this) {}
 
 void App::run()
 {
@@ -31,6 +33,8 @@ void App::init()
   window.create(PROJECT_NAME, 1280, 720);
   window.setVSync(true);
 
+  ui.init(window);
+
   scene.load("./assets/scene.json");
 
   // set camera position so they both appear on start
@@ -39,7 +43,7 @@ void App::init()
   camera.setProjection(Camera::ProjType::perspective);
 
   glEnable(GL_CULL_FACE);
-  glDisable(GL_CULL_FACE);
+  //glDisable(GL_CULL_FACE);
   glEnable(GL_DEPTH_TEST);
 }
 
@@ -67,6 +71,7 @@ void App::stop()
 {
   running = false;
 
+  ui.clear();
   scene.cleanup();
   window.clear();
   glfwTerminate();
@@ -75,7 +80,9 @@ void App::stop()
 
 void App::update(float timestep)
 {
-  if (!paused)
+  ui.update();
+
+  if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_2) == GLFW_PRESS)
     camera.update(timestep, window);
 }
 
@@ -84,6 +91,8 @@ void App::render()
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
   scene.render(camera);
+
+  ui.render();
 }
 
 
@@ -97,28 +106,33 @@ void App::onResize(Window &window, int width, int height)
 
 void App::onClick(Window &window, int button, int action, int mods)
 {
-  if (button == GLFW_MOUSE_BUTTON_1 && action == GLFW_PRESS && App::paused)
+  if (ImGui::GetIO().WantCaptureMouse)
+    return;
+
+  if (button == GLFW_MOUSE_BUTTON_2)
   {
-    App::paused = false;
-    glfwGetCursorPos(window, &m_cursorSave.x, &m_cursorSave.y);
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-    glfwSetCursorPos(window, 0, 0);
+    if (action == GLFW_PRESS)
+    {
+      glfwGetCursorPos(window, &m_cursorSave.x, &m_cursorSave.y);
+      glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+      glfwSetCursorPos(window, 0, 0);
+    }
+    else if (action == GLFW_RELEASE)
+    {
+      glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+      glfwSetCursorPos(window, m_cursorSave.x, m_cursorSave.y);
+    }
   }
+
 }
 
 void App::onKeyboard(Window &window, int key, int scancode, int action, int mods)
 {
+  if (ImGui::GetIO().WantCaptureKeyboard)
+    return;
+
   if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
-  {
-    if (!App::paused)
-    {
-      App::paused = true;
-      glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-      glfwSetCursorPos(window, m_cursorSave.x, m_cursorSave.y);
-    }
-    else
-      window.close();
-  }
+    window.close();
 
   if (action != GLFW_PRESS)
     return;
@@ -129,6 +143,13 @@ void App::onKeyboard(Window &window, int key, int scancode, int action, int mods
       camera.setProjection(Camera::ProjType::orthographic);
     else
       camera.setProjection(Camera::ProjType::perspective);
+  }
+
+  if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS && key == GLFW_KEY_R)
+  {
+    std::cout << "Reloading scene..." << std::endl;
+    scene.reload();
+    std::cout << "Done !" << std::endl;
   }
 
   if (key == GLFW_KEY_O)

@@ -53,6 +53,8 @@ group "Dependencies"
   include("libs/glad")
   include("libs/glfw")
   include("libs/json")
+  include("libs/imgui")
+  include("libs/imguizmo")
 
 group ""
   include("portal")

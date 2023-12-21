@@ -4,6 +4,7 @@
 
 #include "Scene.hpp"
 #include "Window.hpp"
+#include "UserInterface.hpp"
 
 #include <vector>
 
@@ -27,11 +28,12 @@ public:
   void onClick(Window &window, int button, int action, int mods);
   void onKeyboard(Window &window, int key, int scancode, int action, int mods);
 
-  static inline bool paused = true;
+  Scene &getCurrentScene() { return scene; };
 
 private:
   bool running = false;
 
+  UserInterface ui;
   Camera camera;
   Window window;
 
