@@ -1,5 +1,4 @@
 #Custom ignors
-assets/sounds/MinecraftExtracted
 build/
 bin/
 .vs/
