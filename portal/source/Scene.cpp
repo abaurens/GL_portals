@@ -194,7 +194,7 @@ void Scene::updateUI()
       if (!clicked_prop.empty())
       {
         if (ImGui::GetIO().KeyCtrl && clicked_prop == m_selected_prop)
-          m_selected_prop = nullptr;
+          m_selected_prop.clear();
         else
           m_selected_prop = clicked_prop;
       }
@@ -205,18 +205,20 @@ void Scene::updateUI()
   }
   ImGui::End();
 
-  ImGui::Begin("Properties");
-  if (!m_selected_prop.empty())
+  if (ImGui::Begin("Properties"))
   {
-    Prop &prop = props[m_selected_prop];
+    if (!m_selected_prop.empty())
+    {
+      Prop &prop = props[m_selected_prop];
 
-    ImGui::DragFloat3("position", &prop.pos.x, 0.001f);
+      ImGui::DragFloat3("position", &prop.pos.x, 0.001f);
 
-    glm::vec3 rot = glm::degrees(glm::eulerAngles(prop.rot));
-    ImGui::DragFloat3("rotation", &rot.x, 1.0f);
-    prop.rot = glm::quat(glm::radians(rot));
+      glm::vec3 rot = glm::degrees(glm::eulerAngles(prop.rot));
+      ImGui::DragFloat3("rotation", &rot.x, 1.0f);
+      prop.rot = glm::quat(glm::radians(rot));
 
-    ImGui::DragFloat3("scale", &prop.scale.x, 0.001f);
+      ImGui::DragFloat3("scale", &prop.scale.x, 0.001f);
+    }
   }
   ImGui::End();
 }

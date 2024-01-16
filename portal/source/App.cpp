@@ -82,7 +82,9 @@ void App::update(float timestep)
 {
   ui.update();
 
-  if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_2) == GLFW_PRESS)
+  const bool isMouseGrabbed = (glfwGetInputMode(window, GLFW_CURSOR) != GLFW_CURSOR_NORMAL);
+
+  if (isMouseGrabbed && glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_2) == GLFW_PRESS)
     camera.update(timestep, window);
 }
 
