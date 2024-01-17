@@ -1,6 +1,7 @@
 #version 330 core
 
 uniform sampler2D textureSampler;
+uniform vec4 PropId;
 
 in vec2 uv;
 
@@ -16,4 +17,5 @@ void main()
 
   gl_FragColor = texture(textureSampler, uv);
   gl_FragColor *= min(atenuation, 1.0);
+  //gl_FragColor = PropId;
 }

@@ -68,7 +68,8 @@
       "material": "cube",
       "position": [ 0.0, 0.0, -1.5 ],
       "rotation": [ 0.0 ],
-      "scale": [ 0.02 ]
+      "scale": [ 0.02 ],
+      "id": [ 1.0, 0.0, 0.0, 0.0 ]
     },
 
     "blue_portal": {

@@ -13,6 +13,7 @@
 #include <nlohmann/json.hpp>
 
 #include <map>
+#include <set>
 #include <filesystem>
 
 class Scene
@@ -52,4 +53,5 @@ private:
 
   std::string m_selected_prop = "";
   std::map<std::string, Prop> props;
+  std::set<uint32_t> propIds;
 };

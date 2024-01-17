@@ -211,6 +211,34 @@ void Scene::updateUI()
     {
       Prop &prop = props[m_selected_prop];
 
+      uint32_t newId = prop.id;
+      ImGui::InputInt("ID", (int32_t *) &newId, 0, 0);
+
+      // decompose id to color
+      glm::vec4 colorId;
+      colorId.w = (uint8_t)(prop.id >> 24 & 0xff); // alpha
+      colorId.x = (uint8_t)(prop.id >> 16 & 0xff); // red
+      colorId.y = (uint8_t)(prop.id >> 8  & 0xff); // green
+      colorId.z = (uint8_t)(prop.id >> 0  & 0xff); // blue
+
+      colorId /= (float)0xff;
+      ImGui::ColorEdit4("ID (as color)", &colorId.x);
+
+      // recompose id from color
+      newId = 0;
+      newId |= (uint8_t)(colorId.w * 0xff) << 24; // alpha
+      newId |= (uint8_t)(colorId.x * 0xff) << 16; // red
+      newId |= (uint8_t)(colorId.y * 0xff) << 8;  // green
+      newId |= (uint8_t)(colorId.z * 0xff) << 0;  // blue
+
+      // ensure no duplicate ID or null id
+      if (newId != 0 && !propIds.contains(newId))
+      {
+        propIds.insert(newId);
+        propIds.erase(prop.id);
+        prop.id = newId;
+      }
+
       ImGui::DragFloat3("position", &prop.pos.x, 0.001f);
 
       glm::vec3 rot = glm::degrees(glm::eulerAngles(prop.rot));
@@ -582,11 +610,49 @@ void Scene::parse_material(const std::string &name, const json &json_material)
     << " (ignored)" << std::endl;
 }
 
+// this is awfull but I don't care
+static uint32_t randId(const std::string_view seed)
+{
+  const size_t real_seed = std::hash<std::string_view>()(seed);
+
+  srand((uint32_t)(real_seed % 0xffffffff));
+  const uint8_t red   = ((uint32_t)rand() % 0xff);
+  const uint8_t green = ((uint32_t)rand() % 0xff);
+  const uint8_t blue  = ((uint32_t)rand() % 0xff);
+  const uint8_t alpha = ((uint32_t)rand() % 0xff);
+
+  uint32_t id = 0;
+  id |= (uint8_t)alpha << 24; // alpha
+  id |= (uint8_t)red   << 16; // red
+  id |= (uint8_t)green << 8;  // green
+  id |= (uint8_t)blue  << 0;  // blue
+  return id;
+}
 
 void Scene::load_scene(const json &json_scene)
 {
+  propIds.clear();
+
   for (auto it = json_scene.begin(); it != json_scene.end(); ++it)
     parse_prop(it.key(), *it);
+
+  // assign props unique IDs
+
+  uint32_t nextId = 1;
+  auto prop = props.begin();
+  for (; prop != props.end(); ++prop)
+  {
+    // skip already assigned IDs
+    if (prop->second.id != 0)
+      continue;
+
+    // find next available ID
+    while (propIds.contains(nextId))
+      ++nextId;
+
+    propIds.insert(nextId);
+    prop->second.id = nextId++;
+  }
 }
 
 void Scene::parse_prop(const std::string &name, const json &json_prop)
@@ -701,6 +767,93 @@ void Scene::parse_prop(const std::string &name, const json &json_prop)
         scale[i] = (*it)[i % it->size()].get<float>();
       prop.scale = scale;
     }
+  }
+
+  uint32_t id = 0;
+  it = json_prop.find("id");
+  if (it != json_prop.end())
+  {
+    if (it->is_number_integer())
+    {
+      id = (uint32_t)(*it);
+      if (propIds.contains(id))
+      {
+        std::cout << "Invalide duplicate ID : " << id << ". (ignored)" << std::endl;
+        id = 0;
+      }
+    }
+    else if (it->is_array())
+    {
+      if (it->size() != 3 && it->size() != 4)
+      {
+        std::cout << "Invalid value for attribute \"id\" of prop \"" << name << "\". Vector must be vec3 or vec4. (ignored)" << std::endl;
+      }
+      else
+      {
+        glm::vec4 colorId;
+        colorId.x = (float)(*it)[0];
+        colorId.y = (float)(*it)[1];
+        colorId.z = (float)(*it)[2];
+        if (it->size() == 4)
+          colorId.w = (float)(*it)[3];
+
+        id = 0;
+        id |= ((uint32_t)(colorId.w * 0xff) & 0xff) << 24; // alpha
+        id |= ((uint32_t)(colorId.x * 0xff) & 0xff) << 16; // red
+        id |= ((uint32_t)(colorId.y * 0xff) & 0xff) << 8;  // green
+        id |= ((uint32_t)(colorId.z * 0xff) & 0xff) << 0;  // blue
+
+        if (propIds.contains(id))
+        {
+          std::cout << "Invalide duplicate ID : "
+            << id << " ("
+            << colorId.x << ", "
+            << colorId.y << ", "
+            << colorId.z << ", "
+            << colorId.w << "). (ignored)" << std::endl;
+          id = 0;
+        }
+      }
+    }
+    else if (it->is_string())
+    {
+      std::string str = *it;
+      if (str.starts_with("0x"))
+      {
+        str = str.substr(2);
+        if (str.find_first_not_of("0123456789ABCDEFabcdef") != std::string::npos)
+        {
+          std::cout << "Invalid value for attribute \"id\" of prop \"" << name << "\". String must be an hexadecimal number. (ignored)" << std::endl;
+        }
+        else
+        {
+          std::stringstream ss;
+          ss << std::hex << str;
+          ss >> id;
+          if (propIds.contains(id))
+          {
+            std::cout << "Invalide duplicate ID : 0x" << std::hex << id << ". (ignored)" << std::endl;
+            id = 0;
+          }
+        }
+      }
+    }
+  }
+
+ #ifdef _DEBUG // insert random colors as id
+  if (id == 0)
+  {
+    do
+    {
+      id = randId(name);
+    } while (propIds.contains(id));
+  }
+ #endif
+
+  if (id != 0)
+  {
+    prop.id = id;
+    propIds.insert(id);
   }
 
   props[name] = prop;
